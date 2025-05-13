@@ -12,7 +12,7 @@ clearvars;close all;clc;
 addpath(genpath('..\WetiMatlabFunctions'))
 
 % select LidarType
-LidarType           = '4BeamPulsed'; % [4BeamPulsed/CircularCW]
+LidarType           = 'CircularCW'; % [4BeamPulsed/CircularCW]
 
 % Seeds (can be adjusted, but will provide different results)
 nSeed               = 6;                        % [-]	number of stochastic turbulence field samples
@@ -23,7 +23,7 @@ t_start             = 60;                       % [s] 	ignore data before for ST
 DT                  = 0.01;                     % [s]   time step
 R                   = 120;                      % [m]  	rotor radius to calculate REWS
 
-% Parameter for Cost (Summer Games 2024)
+% Parameter for Cost (Summer Games 2025)
 tau                 = 2;                        % [s]   time to overcome pitch actuator, from Example 1: tau = T_Taylor - T_buffer, since there T_filter = T_scan = 0
 
 switch LidarType
@@ -66,7 +66,6 @@ for iSeed = 1:nSeed
     TurbSimResultFile                 	= ['TurbulentWind\URef_18_Seed_',num2str(Seed,'%02d'),'.wnd'];   
     [REWS_WindField,Time_WindField]  	= CalculateREWSfromWindField(TurbSimResultFile,R,2);
                
-
     % Calculate REWS
     clear CalculateREWSfromLidarData_LDP_v3 % clearing all persistent variables from previous call
     DataLDP             = CalculateREWSfromLidarData_LDP_v3(Data,DT,LDP);   
