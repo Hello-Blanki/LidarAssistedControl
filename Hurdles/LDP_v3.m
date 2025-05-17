@@ -1,54 +1,44 @@
-function DataLDP  = CalculateREWSfromLidarData_LDP_v3(Data,DT,LDP)
+function [REWS,REWS_f,REWS_b]  = LDP_v3(time,isValid,beamID,lineOfSightWindSpeed,DT,LDP)
 % Function to postprocess lidar data to get the rotor-effective wind speed
 % (REWS) equal to the LDP_v1/FFP_v1 without the need of compiling a DLL. 
 % Code is intented to be as close as possble to the Fortran Code.
 % v3: similar to v1, but includes ignoring of signals with invalid data.
 
-% time
-TMax            = max(Data.time);
-time            = [0:DT:TMax]';
+% internal variables
+PreviousBeamID  = -1;       % force WFR on first call
+REWS_i          = 0;        % Dummy
 n_t             = length(time);
 
 % allocation
-DataLDP.time    = time;
-DataLDP.REWS    = NaN(n_t,1);
-DataLDP.REWS_f  = NaN(n_t,1);
-DataLDP.REWS_b  = NaN(n_t,1);
-
-% internal variables
-PreviousBeamID  = 0;
-
-% channels Matlab
-LosChannel      = "lineOfSightWindSpeed"+LDP.IndexGate;
-isValidChannel  = "isValid"+LDP.IndexGate;
+REWS            = NaN(n_t,1);
+REWS_f          = NaN(n_t,1);
+REWS_b          = NaN(n_t,1);
 
 % loop over time
 for i_t = 1:n_t
-    Idx         = find(Data.time<=time(i_t),1,'last');
-    ThisBeamID  = Data.beamID(Idx);
 
     % if there is a new measurement perform wind field reconstruction    
-    if ThisBeamID ~= PreviousBeamID  
-        v_los               = Data.(LosChannel)(Idx);
-        isValid             = Data.(isValidChannel)(Idx);
-        REWS                = WindFieldReconstruction(v_los,isValid,LDP.NumberOfBeams,LDP.AngleToCenterline);
-        PreviousBeamID      = ThisBeamID(1); % update beamID
+    if beamID(i_t) ~= PreviousBeamID  
+        v_los_i         = lineOfSightWindSpeed(i_t);
+        isValid_i       = isValid(i_t);
+        REWS_i          = WindFieldReconstruction(v_los_i,isValid_i,LDP.NumberOfBeams,LDP.AngleToCenterline);
+        PreviousBeamID  = beamID(i_t); % update beamID
     end
 
     % Low pass filter the REWS
 	if LDP.FlagLPF
-		REWS_f      	= LPFilter(REWS,DT,LDP.omega_cutoff);
+		REWS_f_i     	= LPFilter(REWS_i,DT,LDP.omega_cutoff);
     else
-		REWS_f      	= REWS;
+		REWS_f_i      	= REWS_i;
     end
 
     % Get buffered and filtered REWS from buffer
-    REWS_b              = Buffer(REWS_f,DT,LDP.T_buffer);
+    REWS_b_i            = Buffer(REWS_f_i,DT,LDP.T_buffer);
 
     % Store in structure
-    DataLDP.REWS(i_t)   = REWS;
-    DataLDP.REWS_f(i_t) = REWS_f;
-    DataLDP.REWS_b(i_t) = REWS_b;
+    REWS(i_t)           = REWS_i;
+    REWS_f(i_t)         = REWS_f_i;
+    REWS_b(i_t)         = REWS_b_i;
 end
 
 end
@@ -61,7 +51,7 @@ function REWS = WindFieldReconstruction(v_los,isValid,NumberOfBeams,AngleToCente
 % init u_est_Buffer
 persistent u_est_Buffer;
 if isempty(u_est_Buffer)      
-    u_est_Buffer = NaN(NumberOfBeams,1);   
+    u_est_Buffer = NaN(NumberOfBeams,1);  
 end 
 
 % Estimate u component assuming perfect alignment
