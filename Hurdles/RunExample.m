@@ -3,16 +3,16 @@
 % Get the best possible wind preview (2s) by improving the baseline lidar 
 % data processing (LDP_v3)!
 % Results 4BeamPulsed:
-% v3: Cost for Summer Games 2025 ("18 m/s hurdles"):  0.516059 m/s 
+% v3: Cost for Summer Games 2025 ("18 m/s hurdles"):  0.515998 m/s 
 % Results CircularCW:
-% v3: Cost for Summer Games 2025 ("18 m/s hurdles"):  0.463949 m/s 
+% v3: Cost for Summer Games 2025 ("18 m/s hurdles"):  0.463842 m/s 
 
 %% Setup
 clearvars;close all;clc;
 addpath(genpath('..\WetiMatlabFunctions'))
 
 % select LidarType
-LidarType           = '4BeamPulsed'; % [4BeamPulsed/CircularCW]
+LidarType           = 'CircularCW'; % [4BeamPulsed/CircularCW]
 
 % Seeds (can be adjusted, but will provide different results)
 nSeed               = 6;                        % [-]	    number of stochastic turbulence field samples
@@ -20,7 +20,7 @@ Seed_vec            = [1:nSeed]+18*100;         % [-]  	    vector of seeds
 
 % Parameters postprocessing (can be adjusted, but will provide different results)
 t_start             = 60;                       % [s] 	    ignore data before for STD and spectra
-TMax                = 659.75;                   % [s]       total run time (longest time in input files)
+TMax                = 660;                      % [s]       total run time
 DT                  = 0.01;                     % [s]       time step
 time                = [0:DT:TMax]';             % [s]       time vector
 R                   = 120;                      % [m]  	    rotor radius to calculate REWS
@@ -63,9 +63,9 @@ for iSeed = 1:nSeed
 	WindFileName                        = ['URef_18_Seed_',num2str(Seed,'%02d')];
     SolisResultFile                     = fullfile(SimulationFolderLAC,[WindFileName,'_lidar_data_',LidarType,'.csv']);
     Data                                = readtable(SolisResultFile);    
-    beamID                              = interp1(Data.time,Data.beamID,time,'previous');
-    isValid                             = interp1(Data.time,Data.("isValid"+LDP.IndexGate),time,'previous');
-    lineOfSightWindSpeed                = interp1(Data.time,Data.("lineOfSightWindSpeed"+LDP.IndexGate),time,'previous');
+    beamID                              = interp1(Data.time,Data.beamID,time,'previous','extrap');
+    isValid                             = interp1(Data.time,Data.("isValid"+LDP.IndexGate),time,'previous','extrap');
+    lineOfSightWindSpeed                = interp1(Data.time,Data.("lineOfSightWindSpeed"+LDP.IndexGate),time,'previous','extrap');
 
     % Get REWS from the wind field 
     TurbSimResultFile                 	= ['TurbulentWind\URef_18_Seed_',num2str(Seed,'%02d'),'.wnd'];   
