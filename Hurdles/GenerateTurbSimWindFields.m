@@ -1,4 +1,5 @@
 % Generates wind fields for DLC 1.2 running TurbSim.
+% Only for documentation on how RewsFiles were generated. 
 
 %% Setup
 clearvars;
@@ -19,10 +20,6 @@ Seed_matrix         = repmat(URef_vector',1,n_Seed)*100+repmat(Seed_vector,n_URe
 TurbSimExeFile      = 'TurbSim_x64.exe';
 TurbSimTemplateFile = 'TurbSimInputFileTemplateIEA15MW.inp';
 
-% Generate folder 
-if ~exist('TurbulentWind','dir')
-    mkdir TurbulentWind
-end
 
 %% Preprocessing: generate turbulent wind field
 
@@ -50,3 +47,32 @@ end
 
 % Clean up
 delete(['TurbulentWind\',TurbSimExeFile])
+
+%% Calculate REWS
+R                   = 120;                      % [m]  	    rotor radius to calculate REWS
+
+figure
+for i_URef    = 1:n_URef
+    subplot(n_URef,1,i_URef);
+    hold on;box on;grid on
+    URef      = URef_vector(i_URef);
+    for i_Seed = 1:n_Seed        
+        Seed                        = Seed_matrix(i_URef,i_Seed);
+        WindFileName                = ['URef_',num2str(URef,'%02d'),'_Seed_',num2str(Seed,'%02d')];
+        TurbSimResultFile  	        = ['TurbulentWind\',WindFileName,'.wnd'];
+
+        [REWS_WindField,Time_WindField]  	= CalculateREWSfromWindField(TurbSimResultFile,R,1);  
+
+        % plot
+        plot(Time_WindField,REWS_WindField)  
+
+        RewsFile  	                = ['TurbulentWind\',WindFileName,'.csv'];
+
+        % write file
+        fid = fopen(RewsFile,'w+');
+        fprintf(fid,'time,REWS\r\n');
+        fprintf(fid,['%f,%f\r\n'],[Time_WindField REWS_WindField]');
+        fclose(fid);
+
+    end
+end

@@ -4,7 +4,10 @@
 *.dbg
 *.pyc
 .idea/
-TurbulentWind*
+*.wnd
+*.ipt
+*.twr
+*.sum
 SimulationResults*
 slprj
 *.slxc

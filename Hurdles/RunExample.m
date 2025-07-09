@@ -9,10 +9,12 @@
 
 %% Setup
 clearvars;close all;clc;
-addpath(genpath('..\WetiMatlabFunctions'))
+
+% select LDP function
+MyLDPfunction       = @LDP_v3; % [LDP_v3/???]
 
 % select LidarType
-LidarType           = 'CircularCW'; % [4BeamPulsed/CircularCW]
+LidarType           = '4BeamPulsed'; % [4BeamPulsed/CircularCW]
 
 % Seeds (can be adjusted, but will provide different results)
 nSeed               = 6;                        % [-]	    number of stochastic turbulence field samples
@@ -23,7 +25,6 @@ t_start             = 60;                       % [s] 	    ignore data before fo
 TMax                = 660;                      % [s]       total run time
 DT                  = 0.01;                     % [s]       time step
 time                = [0:DT:TMax]';             % [s]       time vector
-R                   = 120;                      % [m]  	    rotor radius to calculate REWS
 
 % Parameter for Cost (Summer Games 2025)
 tau                 = 2;                        % [s]       time to overcome pitch actuator, from Example 1: tau = T_Taylor - T_buffer, since there T_filter = T_scan = 0
@@ -62,36 +63,36 @@ for iSeed = 1:nSeed
     Seed                                = Seed_vec(iSeed);
 	WindFileName                        = ['URef_18_Seed_',num2str(Seed,'%02d')];
     SolisResultFile                     = fullfile(SimulationFolderLAC,[WindFileName,'_lidar_data_',LidarType,'.csv']);
-    Data                                = readtable(SolisResultFile);    
-    beamID                              = interp1(Data.time,Data.beamID,time,'previous','extrap');
-    isValid                             = interp1(Data.time,Data.("isValid"+LDP.IndexGate),time,'previous','extrap');
-    lineOfSightWindSpeed                = interp1(Data.time,Data.("lineOfSightWindSpeed"+LDP.IndexGate),time,'previous','extrap');
+    SolisData                           = readtable(SolisResultFile);    
+    beamID                              = interp1(SolisData.time,SolisData.beamID,time,'previous','extrap');
+    isValid                             = interp1(SolisData.time,SolisData.("isValid"+LDP.IndexGate),time,'previous','extrap');
+    lineOfSightWindSpeed                = interp1(SolisData.time,SolisData.("lineOfSightWindSpeed"+LDP.IndexGate),time,'previous','extrap');
 
     % Get REWS from the wind field 
-    TurbSimResultFile                 	= ['TurbulentWind\URef_18_Seed_',num2str(Seed,'%02d'),'.wnd'];   
-    [REWS_WindField,Time_WindField]  	= CalculateREWSfromWindField(TurbSimResultFile,R,2);
-               
-    % Calculate REWS
-    clear LDP_v3 % clearing all persistent variables from previous call
-    [REWS,REWS_f,REWS_b]                = LDP_v3(time,isValid,beamID,lineOfSightWindSpeed,DT,LDP);
+    RewsFile                 	        = ['TurbulentWind\URef_18_Seed_',num2str(Seed,'%02d'),'.csv'];  
+    RewsData                            = readtable(RewsFile);
+    REWS_WindField                      = interp1([RewsData.time;RewsData.time+600],[RewsData.REWS;RewsData.REWS],time); % REWS is circular 
+    REWS_WindField_shifted              = interp1([RewsData.time;RewsData.time+600],[RewsData.REWS;RewsData.REWS],time+tau);
+          
+    % Calculate REWS from the lidar data
+    clear(func2str(MyLDPfunction)) % clearing all persistent variables from previous call 
+    [REWS,REWS_f,REWS_b]                = MyLDPfunction(time,isValid,beamID,lineOfSightWindSpeed,DT,LDP);
 
     % Calculate mean absolute error
-    REWS_WindField_Fs                   = interp1(Time_WindField,REWS_WindField,time);
-    REWS_WindField_Fs_shifted           = interp1(Time_WindField-tau,REWS_WindField,time);     % shift the REWS from wind field by tau (intented prediction time) into the future (lower times)
-    Error                               = REWS_WindField_Fs_shifted-REWS_b;                    % error is  REWS from wind field shifted minus REWS from lidar filtered and buffered.
+    Error                               = REWS_WindField_shifted-REWS_b;                    % error is  REWS from wind field shifted minus REWS from lidar filtered and buffered.
     MAE(iSeed)                          = mean(abs(detrend(Error(time>=t_start),'constant'))); % only consider error after t_start 
              
     % Plot REWS for absolute error             
     figure('Name',['REWS seed ',num2str(Seed)])
     subplot(311)
     hold on; grid on; box on
-    plot(time,  REWS_WindField_Fs);
+    plot(time,  REWS_WindField);
     plot(time,  REWS);
     ylabel('REWS [m/s]');
     legend('wind field','lidar estimate')
     subplot(312)
     hold on; grid on; box on
-    plot(time,  REWS_WindField_Fs_shifted);
+    plot(time,  REWS_WindField_shifted);
     plot(time,  REWS_b);
     ylabel('REWS [m/s]');
     legend('wind field shifted','lidar estimate filtered and buffered')
