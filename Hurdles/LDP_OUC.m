@@ -3,7 +3,6 @@ function [REWS,REWS_f,REWS_b]  = LDP_OUC(time,isValid,beamID,lineOfSightWindSpee
 % (REWS) equal to the LDP_v1/FFP_v1 without the need of compiling a DLL. 
 % Code is intented to be as close as possble to the Fortran Code.
 % v3: similar to v1, but includes ignoring of signals with invalid data.
-%LT?
 % internal variables
 PreviousBeamID  = -1;       % force WFR on first call
 REWS_i          = 0;        % Dummy
@@ -21,7 +20,7 @@ for i_t = 1:n_t
     if beamID(i_t) ~= PreviousBeamID  
         v_los_i         = lineOfSightWindSpeed(i_t);
         isValid_i       = isValid(i_t);
-        REWS_i          = WindFieldReconstruction(v_los_i,isValid_i,LDP.NumberOfBeams,LDP.AngleToCenterline);
+        REWS_i          = WindFieldReconstruction(v_los_i,isValid_i,LDP.NumberOfBeams,LDP.AngleToCenterline, beamID(i_t));
         PreviousBeamID  = beamID(i_t); % update beamID
     end
 
@@ -44,28 +43,38 @@ end
 end
 
 
-function REWS = WindFieldReconstruction(v_los,isValid,NumberOfBeams,AngleToCenterline)
+function REWS = WindFieldReconstruction(v_los,isValid,NumberOfBeams,AngleToCenterline, beamId)
 % matlab version of the subroutine WindFieldReconstruction in LDP_v1_Subs.f90
 % extended to deal with invalid data. 
 
-% init u_est_Buffer
-persistent u_est_Buffer;
+% init u_est_Buffer, u_est_beams
+persistent u_est_Buffer u_est_beams;
 if isempty(u_est_Buffer)      
-    u_est_Buffer = NaN(NumberOfBeams,1);  
-end 
+    u_est_Buffer        = NaN(NumberOfBeams,1);  
+end
+
+% init u_est_beams, defined as valid u_est at 4 beams 
+if isempty(u_est_beams)
+    u_est_beams         = NaN(NumberOfBeams, 1);
+end
 
 % Estimate u component assuming perfect alignment
 if isValid
-    u_est       = v_los/cosd(AngleToCenterline);
+    u_est               = v_los/cosd(AngleToCenterline);
+    u_est_beams(beamId) = u_est; % update valid u_est at different beam
 else
-    u_est       = NaN;
+    u_est               = u_est_beams(beamId);
 end
 
 % Update Buffer for estimated u component
-u_est_Buffer    = [u_est;u_est_Buffer(1:NumberOfBeams-1)];
+u_est_Buffer            = [u_est;u_est_Buffer(1:NumberOfBeams-1)];
+
+% if ~anynan(u_est_Buffer)
+%     disp('error')
+% end
 
 % Calculate REWS from mean over all estimated u components
-REWS  	        = mean(u_est_Buffer,'omitnan');
+REWS  	                = mean(u_est_Buffer,'omitnan');
 
 end
 
