@@ -1,4 +1,4 @@
-function [REWS,REWS_f,REWS_b]  = LDP_v3(time,isValid,beamID,lineOfSightWindSpeed,DT,LDP)
+function [REWS,REWS_f,REWS_b]  = LDP_OUC(time,isValid,beamID,lineOfSightWindSpeed,DT,LDP)
 % Function to postprocess lidar data to get the rotor-effective wind speed
 % (REWS) equal to the LDP_v1/FFP_v1 without the need of compiling a DLL. 
 % Code is intented to be as close as possble to the Fortran Code.
