@@ -69,10 +69,6 @@ end
 % Update Buffer for estimated u component
 u_est_Buffer            = [u_est;u_est_Buffer(1:NumberOfBeams-1)];
 
-% if ~anynan(u_est_Buffer)
-%     disp('error')
-% end
-
 % Calculate REWS from mean over all estimated u components
 REWS  	                = mean(u_est_Buffer,'omitnan');
 
@@ -100,6 +96,7 @@ OutputSignal = 1.0/a1 * (-a0*OutputSignalLast + b1*InputSignal + b0*InputSignalL
 % Save signals for next time step
 InputSignalLast     = InputSignal;
 OutputSignalLast    = OutputSignal;
+
 end
 
 function REWS_b = Buffer(REWS,DT,T_buffer)
