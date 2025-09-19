@@ -16,6 +16,8 @@ MyLDPfunction       = @LDP_OUC; % [LDP_v3/??? function we need to adjust]
 % select LidarType
 LidarType           = '4BeamPulsed'; % [4BeamPulsed/CircularCW]
 
+LL=1;
+
 % Seeds (can be adjusted, but will provide different results)
 nSeed               = 6;                        % [-]	    number of stochastic turbulence field samples
 Seed_vec            = [1:nSeed]+18*100;         % [-]  	    vector of seeds
