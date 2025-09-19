@@ -11,7 +11,7 @@
 clearvars;close all;clc;
 
 % select LDP function
-MyLDPfunction       = @LDP_v3; % [LDP_v3/???]
+MyLDPfunction       = @LDP_OUC; % [LDP_v3/???]
 
 % select LidarType
 LidarType           = '4BeamPulsed'; % [4BeamPulsed/CircularCW]
