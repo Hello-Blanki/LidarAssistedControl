@@ -3,7 +3,7 @@ function [REWS,REWS_f,REWS_b]  = LDP_v3(time,isValid,beamID,lineOfSightWindSpeed
 % (REWS) equal to the LDP_v1/FFP_v1 without the need of compiling a DLL. 
 % Code is intented to be as close as possble to the Fortran Code.
 % v3: similar to v1, but includes ignoring of signals with invalid data.
-
+%LT?
 % internal variables
 PreviousBeamID  = -1;       % force WFR on first call
 REWS_i          = 0;        % Dummy
